@@ -45,7 +45,7 @@ The Streamlit dashboard provides
 ## Project Structure
 ├── dashboard.py
 ├── requirements.txt
-├── products_clean.csv
+├── main_data.csv
 ├── notebook.ipynb
 
 

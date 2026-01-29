@@ -7,10 +7,14 @@ import matplotlib.pyplot as plt
 @st.cache_data
 def load_data():
     df = pd.read_csv("main_data.csv")
+    df["product_category_name"] = (
+        df["product_category_name"]
+        .fillna("unknown")
+        .astype(str)
+    )
     return df
 
 df = load_data()
-
 num_cols = df.select_dtypes(include="number").columns
 
 # Title & Description
@@ -20,18 +24,33 @@ st.write(
     "dan insight bisnis terkait karakteristik produk dan biaya logistik"
 )
 
+# Sidebar Filter
+st.sidebar.header("Filter Data")
+
+selected_categories = st.sidebar.multiselect(
+    "Pilih Kategori Produk",
+    sorted(df["product_category_name"].unique())
+)
+
+# Apply filter dataframe
+filtered_df = df.copy()
+if selected_categories:
+    filtered_df = filtered_df[
+        filtered_df["product_category_name"].isin(selected_categories)
+    ]
+
 # Dataset Overview
 st.header("Dataset Overview")
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    st.metric("Jumlah Produk", len(df))
+    st.metric("Jumlah Produk", len(filtered_df))
 
 with col2:
-    st.metric("Jumlah Kategori", df["product_category_name"].nunique())
+    st.metric("Jumlah Kategori", filtered_df["product_category_name"].nunique())
 
 with col3:
-    st.metric("Jumlah Fitur", df.shape[1])
+    st.metric("Jumlah Fitur", filtered_df.shape[1])
 
 # Descriptive Statistics
 st.header("Statistik Deskriptif Produk")
@@ -41,13 +60,13 @@ selected_col = st.selectbox(
     num_cols
 )
 
-st.write(df[selected_col].describe())
+st.write(filtered_df[selected_col].describe())
 
 # Visualization 1
 st.header("Top 10 Kategori dengan Rata Rata Berat Tertinggi")
 
 top_weight = (
-    df.groupby("product_category_name")["product_weight_g"]
+    filtered_df.groupby("product_category_name")["product_weight_g"]
     .mean()
     .sort_values(ascending=False)
     .head(10)
@@ -64,14 +83,14 @@ plt.tight_layout()
 st.pyplot(fig1)
 
 st.write(
-    "Kategori furnitur mendominasi produk dengan berat tertinggi "
-    "yang berpotensi meningkatkan biaya pengiriman"
+    "Kategori dengan rata rata berat produk tinggi "
+    "berpotensi meningkatkan biaya pengiriman dan penyimpanan"
 )
 
 # Visualization 2
 st.header("Pengaruh Dimensi terhadap Berat Produk")
 
-corr = df[
+corr = filtered_df[
     [
         "product_weight_g",
         "product_length_cm",
@@ -90,34 +109,23 @@ plt.tight_layout()
 st.pyplot(fig2)
 
 st.write(
-    "Dimensi dengan korelasi tertinggi terhadap berat produk "
-    "menjadi fokus utama untuk optimasi kemasan dan biaya logistik"
+    "Dimensi dengan korelasi tertinggi terhadap berat "
+    "menjadi fokus utama untuk optimasi kemasan dan logistik"
 )
 
-# Category Analysis
-st.header("Analisis Berdasarkan Kategori")
-
-df["product_category_name"] = df["product_category_name"].fillna("unknown").astype(str)
-
-category = st.selectbox(
-    "Pilih kategori produk",
-    sorted(df["product_category_name"].unique())
-)
-
-filtered_df = df[df["product_category_name"] == category]
-
+# Category Summary
+st.header("Ringkasan Berdasarkan Filter")
 st.write("Jumlah produk:", len(filtered_df))
 st.write("Rata rata berat:", filtered_df["product_weight_g"].mean())
 st.write("Rata rata jumlah foto:", filtered_df["product_photos_qty"].mean())
 
 # Conclusion
 st.header("Kesimpulan")
-
 st.markdown(
     """
-    - Dataset produk memiliki kualitas data yang baik setelah penanganan missing value dan outlier  
-    - Produk dengan berat dan dimensi besar terkonsentrasi pada kategori tertentu  
-    - Optimasi dimensi dan kemasan berpotensi menurunkan biaya logistik  
-    - Dashboard ini membantu pengambilan keputusan berbasis data secara interaktif  
+    - Analisis menunjukkan bahwa berat dan dimensi produk sangat dipengaruhi oleh kategori  
+    - Filter interaktif membantu eksplorasi karakteristik produk secara spesifik  
+    - Optimasi dimensi dan kemasan dapat meminimalkan biaya logistik  
+    - Dashboard ini mendukung pengambilan keputusan berbasis data secara dinamis  
     """
 )
